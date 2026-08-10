@@ -1,0 +1,15 @@
+export const statusLabels: Record<string, string> = {
+  DRAFT: "Entwurf", NEW: "Neu", OPEN: "Offen", ASSIGNED: "Zugewiesen", IN_PROGRESS: "In Bearbeitung",
+  WAITING_FOR_CUSTOMER: "Wartet auf Kunden", WAITING_FOR_THIRD_PARTY: "Wartet auf Drittanbieter", RESOLVED: "Gelöst", CLOSED: "Geschlossen", CANCELLED: "Storniert", MERGED: "Zusammengeführt",
+};
+export const priorityLabels: Record<string, string> = { LOW: "Niedrig", MEDIUM: "Mittel", HIGH: "Hoch", CRITICAL: "Kritisch" };
+export const roleLabels: Record<string, string> = { CUSTOMER: "Kunde", AGENT: "Supportmitarbeiter", ADMIN: "Administrator" };
+export const sourceLabels: Record<string, string> = { WEB: "Webportal", EMAIL: "E-Mail", PHONE: "Telefon", INTERNAL: "Intern", API: "API" };
+export const actionLabels: Record<string, string> = {
+  USER_REGISTERED: "Benutzer registriert", LOGIN_SUCCESS: "Anmeldung erfolgreich", LOGIN_FAILURE: "Anmeldung fehlgeschlagen", LOGOUT: "Abmeldung", PASSWORD_RESET: "Passwort zurückgesetzt", PASSWORD_CHANGED: "Passwort geändert", PROFILE_UPDATED: "Profil aktualisiert",
+  USER_CREATED: "Benutzer angelegt", USER_UPDATED: "Benutzer aktualisiert", USER_DEACTIVATED: "Benutzer deaktiviert", USER_REACTIVATED: "Benutzer reaktiviert", ROLE_CHANGED: "Benutzerrolle geändert", TEAM_MEMBERSHIP_UPDATED: "Teamzugehörigkeit aktualisiert",
+  TICKET_CREATED: "Ticket erstellt", DRAFT_CREATED: "Entwurf erstellt", DRAFT_SUBMITTED: "Entwurf eingereicht", DRAFT_DELETED: "Entwurf gelöscht", TICKET_UPDATED: "Ticket aktualisiert", STATUS_CHANGED: "Status geändert", PRIORITY_CHANGED: "Priorität geändert", TICKET_ASSIGNED: "Ticket zugewiesen", TEAM_ASSIGNED: "Supportteam zugewiesen", TICKET_REOPENED: "Ticket wieder geöffnet", TICKET_RESOLVED: "Ticket gelöst", TICKET_CLOSED: "Ticket geschlossen", TICKET_MERGED: "Tickets zusammengeführt",
+  COMMENT_CREATED: "Kommentar erstellt", COMMENT_UPDATED: "Kommentar bearbeitet", COMMENT_DELETED: "Kommentar gelöscht", INTERNAL_NOTE_CREATED: "Interne Notiz erstellt", ATTACHMENT_UPLOADED: "Anhang hochgeladen", COMMENT_ATTACHMENT_UPLOADED: "Kommentaranhang hochgeladen", LINK_UPDATED: "Link aktualisiert", LINK_DELETED: "Link gelöscht", TAG_ADDED: "Tag hinzugefügt", TAG_REMOVED: "Tag entfernt", TICKET_RATED: "Ticket bewertet",
+  CATEGORY_CREATED: "Kategorie angelegt", CATEGORY_UPDATED: "Kategorie aktualisiert", CATEGORY_DELETED: "Kategorie gelöscht", TEAM_CREATED: "Team angelegt", TEAM_UPDATED: "Team aktualisiert", TEAM_DEACTIVATED: "Team deaktiviert", TEAM_MEMBERS_UPDATED: "Teammitglieder aktualisiert", SLA_CREATED: "SLA-Richtlinie angelegt", SLA_UPDATED: "SLA-Richtlinie aktualisiert", ARTICLE_CREATED: "Wissensartikel angelegt", ARTICLE_UPDATED: "Wissensartikel aktualisiert", ARTICLE_ARCHIVED: "Wissensartikel archiviert", REPORT_EXPORTED: "Bericht exportiert",
+};
+export const entityLabels: Record<string, string> = { User: "Benutzer", Ticket: "Ticket", Comment: "Kommentar", TicketLink: "Ticketlink", Category: "Kategorie", SupportTeam: "Supportteam", SlaPolicy: "SLA-Richtlinie", KnowledgeBaseArticle: "Wissensartikel", Report: "Bericht" };
