@@ -280,6 +280,12 @@ const authorizeCommentUpload = asyncHandler(async (request, _response, next) => 
   const ticket = await ensureTicketAccess(String(request.params.ticketId), request.user!);
   const comment = await prisma.comment.findFirst({ where: { id: String(request.params.commentId), ticketId: ticket.id, deletedAt: null } });
   if (!comment) throw new AppError("Der Kommentar wurde nicht gefunden.", 404, "COMMENT_NOT_FOUND");
+  if (request.user!.role === "CUSTOMER" && comment.isInternal) {
+    throw new AppError("Der Kommentar wurde nicht gefunden.", 404, "COMMENT_NOT_FOUND");
+  }
+  if (request.user!.role !== "ADMIN" && comment.authorId !== request.user!.id) {
+    throw new AppError("Sie können Dateien nur zu eigenen Nachrichten hinzufügen.", 403, "FORBIDDEN");
+  }
   next();
 });
 
@@ -291,7 +297,7 @@ ticketRouter.post("/:ticketId/comments/:commentId/attachments", authorizeComment
     await Promise.all(files.map(async (file) => { const { unlink } = await import("node:fs/promises"); await unlink(file.path).catch(() => undefined); }));
     throw new AppError("Interne Anhänge sind nur für Supportmitarbeitende verfügbar.", 403, "FORBIDDEN");
   }
-  const visibility = request.user!.role === "CUSTOMER" ? "PUBLIC" : request.body.visibility === "INTERNAL" ? "INTERNAL" : "PUBLIC";
+  const visibility = comment.isInternal ? "INTERNAL" : request.user!.role === "CUSTOMER" ? "PUBLIC" : request.body.visibility === "INTERNAL" ? "INTERNAL" : "PUBLIC";
   const records = await attachmentService.save({ files, ticketId: ticket.id, commentId: comment.id, uploadedById: request.user!.id, visibility });
   await writeAudit(request, "COMMENT_ATTACHMENT_UPLOADED", "Comment", comment.id, { ticketId: ticket.id, count: records.length, visibility });
   return success(response, records, `${records.length} Datei(en) wurden zur Nachricht hinzugefügt.`, 201);

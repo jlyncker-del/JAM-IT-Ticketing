@@ -133,7 +133,7 @@ export function FileUpload({
       ))}
       <div className="attachment-list">
         {files.map((file, index) => (
-          <div key={`${file.name}-${file.lastModified}`}>
+          <div key={`${file.name}-${file.lastModified}-${index}`}>
             <div className="attachment-item">
               <FileText size={19} />
               <div className="attachment-info">

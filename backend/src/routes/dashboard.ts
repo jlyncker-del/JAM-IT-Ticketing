@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate, authorize } from "../middleware/auth.js";
 import { accessWhere } from "../services/ticketService.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { success } from "../utils/responses.js";
@@ -42,7 +42,7 @@ for (const [path, field] of [["tickets-by-status", "status"], ["tickets-by-prior
   }));
 }
 
-dashboardRouter.get("/agent-workload", asyncHandler(async (_request, response) => {
+dashboardRouter.get("/agent-workload", authorize("AGENT", "ADMIN"), asyncHandler(async (_request, response) => {
   const agents = await prisma.user.findMany({ where: { role: { in: ["AGENT", "ADMIN"] }, isActive: true }, select: { id: true, firstName: true, lastName: true, _count: { select: { assignedTickets: { where: { status: { notIn: ["CLOSED", "CANCELLED", "MERGED"] } } } } } } });
   return success(response, agents.map((agent) => ({ id: agent.id, name: `${agent.firstName} ${agent.lastName}`, count: agent._count.assignedTickets })));
 }));

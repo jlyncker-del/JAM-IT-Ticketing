@@ -24,7 +24,16 @@ categoryRouter.delete("/:id", authorize("ADMIN"), asyncHandler(async (request, r
 
 export const teamRouter = Router();
 teamRouter.use(authenticate);
-teamRouter.get("/", asyncHandler(async (_request, response) => success(response, await prisma.supportTeam.findMany({ include: { memberships: { include: { user: { select: { id: true, firstName: true, lastName: true, role: true } } } }, _count: { select: { tickets: true } } }, orderBy: { name: "asc" } }))));
+teamRouter.get("/", authorize("AGENT", "ADMIN"), asyncHandler(async (_request, response) => {
+  const teams = await prisma.supportTeam.findMany({
+    include: {
+      memberships: { include: { user: { select: { id: true, firstName: true, lastName: true, role: true } } } },
+      _count: { select: { tickets: true } },
+    },
+    orderBy: { name: "asc" },
+  });
+  return success(response, teams);
+}));
 teamRouter.post("/", authorize("ADMIN"), asyncHandler(async (request, response) => { const input = z.object({ name: z.string().min(2).max(100), description: z.string().max(500).optional(), isActive: z.boolean().default(true), memberIds: z.array(z.string()).optional() }).parse(request.body); const { memberIds = [], ...data } = input; const ids = [...new Set(memberIds)]; const eligible = await prisma.user.count({ where: { id: { in: ids }, role: { in: ["AGENT", "ADMIN"] }, isActive: true } }); if (eligible !== ids.length) throw new AppError("Mindestens ein Teammitglied ist nicht verfügbar oder kein Supportmitarbeiter.", 400, "INVALID_TEAM_MEMBER"); const item = await prisma.supportTeam.create({ data: { ...data, memberships: { create: ids.map((userId) => ({ userId })) } } }); await writeAudit(request, "TEAM_CREATED", "SupportTeam", item.id); return success(response, item, "Das Team wurde erstellt.", 201); }));
 teamRouter.patch("/:id", authorize("ADMIN"), asyncHandler(async (request, response) => { const input = z.object({ name: z.string().min(2).max(100), description: z.string().max(500).nullable(), isActive: z.boolean() }).partial().parse(request.body); const item = await prisma.supportTeam.update({ where: { id: String(request.params.id) }, data: input }); await writeAudit(request, "TEAM_UPDATED", "SupportTeam", item.id); return success(response, item, "Das Team wurde aktualisiert."); }));
 teamRouter.put("/:id/members", authorize("ADMIN"), asyncHandler(async (request, response) => {
@@ -47,7 +56,17 @@ tagRouter.delete("/:id", authorize("ADMIN"), asyncHandler(async (request, respon
 export const slaRouter = Router();
 slaRouter.use(authenticate);
 slaRouter.get("/", asyncHandler(async (_request, response) => success(response, await prisma.slaPolicy.findMany({ orderBy: { resolutionMinutes: "asc" } }))));
-const slaInput = z.object({ name: z.string().min(2).max(100), description: z.string().max(500).optional(), priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]), firstResponseMinutes: z.number().int().positive(), resolutionMinutes: z.number().int().positive(), businessHoursOnly: z.literal(false, { error: "Geschäftszeiten-SLAs sind in dieser Version nicht aktiviert." }).default(false), isActive: z.boolean().default(true) }).refine((value) => value.resolutionMinutes >= value.firstResponseMinutes, { message: "Die Lösungsfrist darf nicht kürzer als die Reaktionsfrist sein.", path: ["resolutionMinutes"] });
+const slaInputFields = z.object({ name: z.string().min(2).max(100), description: z.string().max(500).optional(), priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]), firstResponseMinutes: z.number().int().positive(), resolutionMinutes: z.number().int().positive(), businessHoursOnly: z.literal(false, { error: "Geschäftszeiten-SLAs sind in dieser Version nicht aktiviert." }).default(false), isActive: z.boolean().default(true) });
+const slaInput = slaInputFields.refine((value) => value.resolutionMinutes >= value.firstResponseMinutes, { message: "Die Lösungsfrist darf nicht kürzer als die Reaktionsfrist sein.", path: ["resolutionMinutes"] });
+const slaPatchInput = z.object({
+  name: slaInputFields.shape.name.optional(),
+  description: slaInputFields.shape.description,
+  priority: slaInputFields.shape.priority.optional(),
+  firstResponseMinutes: slaInputFields.shape.firstResponseMinutes.optional(),
+  resolutionMinutes: slaInputFields.shape.resolutionMinutes.optional(),
+  businessHoursOnly: z.literal(false, { error: "Geschäftszeiten-SLAs sind in dieser Version nicht aktiviert." }).optional(),
+  isActive: z.boolean().optional(),
+});
 slaRouter.post("/", authorize("ADMIN"), asyncHandler(async (request, response) => { const input = slaInput.parse(request.body); if (input.isActive && await prisma.slaPolicy.count({ where: { priority: input.priority, isActive: true } })) throw new AppError("Für diese Priorität existiert bereits eine aktive SLA-Richtlinie.", 409, "ACTIVE_SLA_EXISTS"); const item = await prisma.slaPolicy.create({ data: input }); await writeAudit(request, "SLA_CREATED", "SlaPolicy", item.id); return success(response, item, "Die SLA-Richtlinie wurde erstellt.", 201); }));
-slaRouter.patch("/:id", authorize("ADMIN"), asyncHandler(async (request, response) => { const id = String(request.params.id); const input = slaInput.partial().parse(request.body); const current = await prisma.slaPolicy.findUniqueOrThrow({ where: { id } }); const priority = input.priority ?? current.priority; const active = input.isActive ?? current.isActive; if (active && await prisma.slaPolicy.count({ where: { priority, isActive: true, id: { not: id } } })) throw new AppError("Für diese Priorität existiert bereits eine andere aktive SLA-Richtlinie.", 409, "ACTIVE_SLA_EXISTS"); const item = await prisma.slaPolicy.update({ where: { id }, data: input }); await writeAudit(request, "SLA_UPDATED", "SlaPolicy", item.id); return success(response, item, "Die SLA-Richtlinie wurde aktualisiert."); }));
+slaRouter.patch("/:id", authorize("ADMIN"), asyncHandler(async (request, response) => { const id = String(request.params.id); const input = slaPatchInput.parse(request.body); const current = await prisma.slaPolicy.findUniqueOrThrow({ where: { id } }); slaInput.parse({ ...current, ...input }); const priority = input.priority ?? current.priority; const active = input.isActive ?? current.isActive; if (active && await prisma.slaPolicy.count({ where: { priority, isActive: true, id: { not: id } } })) throw new AppError("Für diese Priorität existiert bereits eine andere aktive SLA-Richtlinie.", 409, "ACTIVE_SLA_EXISTS"); const item = await prisma.slaPolicy.update({ where: { id }, data: input }); await writeAudit(request, "SLA_UPDATED", "SlaPolicy", item.id); return success(response, item, "Die SLA-Richtlinie wurde aktualisiert."); }));
 slaRouter.delete("/:id", authorize("ADMIN"), asyncHandler(async (request, response) => { await prisma.slaPolicy.update({ where: { id: String(request.params.id) }, data: { isActive: false } }); await writeAudit(request, "SLA_DEACTIVATED", "SlaPolicy", String(request.params.id)); return success(response, null, "Die SLA-Richtlinie wurde deaktiviert."); }));

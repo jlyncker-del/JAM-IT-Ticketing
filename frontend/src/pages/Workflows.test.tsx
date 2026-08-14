@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../api/client", () => ({ api: mocks.api, apiErrorMessage: () => "Testfehler" }));
 vi.mock("../contexts/AuthContext", () => ({ useAuth: () => mocks.auth }));
 
-import { AppLayout } from "../layouts/AppLayout";
+import { AppLayout, isSidebarLinkActive } from "../layouts/AppLayout";
 import { CreateTicketPage } from "./CreateTicketPage";
 import { TicketDetailPage } from "./TicketDetailPage";
 import { TicketListPage } from "./TicketListPage";
@@ -30,6 +30,14 @@ describe("Kritische Frontend-Workflows", () => {
   });
 
   it("zeigt die Navigation passend zur Kundenrolle", async () => { renderPage(<Routes><Route element={<AppLayout />}><Route index element={<p>Inhalt</p>} /></Route></Routes>); expect(await screen.findByText("Meine Tickets")).toBeInTheDocument(); expect(screen.queryByText("Benutzer")).not.toBeInTheDocument(); });
+
+  it("markiert für jede Ticketroute genau einen Sidebar-Eintrag", () => {
+    const links = ["/tickets", "/tickets?unassigned=true", "/tickets/neu"];
+    expect(links.filter((link) => isSidebarLinkActive(link, "/tickets", "")).length).toBe(1);
+    expect(links.filter((link) => isSidebarLinkActive(link, "/tickets", "?unassigned=true")).length).toBe(1);
+    expect(links.filter((link) => isSidebarLinkActive(link, "/tickets/neu", "")).length).toBe(1);
+    expect(links.filter((link) => isSidebarLinkActive(link, "/tickets/ticket-123", "")).length).toBe(1);
+  });
 
   it("erstellt ein Ticket über die echte Formularstruktur", async () => {
     const user = userEvent.setup(); mocks.api.get.mockImplementation(async (url: string) => ({ data: { data: url === "/categories" ? [category] : [] } })); mocks.api.post.mockResolvedValue({ data: { data: { id: "ticket-new" }, message: "Ticket erstellt" } });

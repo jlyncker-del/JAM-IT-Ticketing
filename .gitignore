@@ -8,6 +8,8 @@ coverage/
 *.tsbuildinfo
 backend/uploads/*
 !backend/uploads/.gitkeep
+backend/.test-uploads/
+backend/.prod-test-uploads/
 frontend/vite.config.js
 frontend/vite.config.d.ts
 .DS_Store

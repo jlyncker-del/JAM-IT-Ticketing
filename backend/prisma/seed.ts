@@ -1,90 +1,187 @@
-import bcrypt from "bcryptjs";
-import { PrismaClient, TicketPriority, TicketStatus } from "@prisma/client";
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { PrismaClient, TicketPriority, TicketStatus } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
+const seedTicketNumbers = Array.from({ length: 25 }, (_, index) => `JAM-2026-${String(index + 1).padStart(6, "0")}`);
 
-const categoryNames = [
-  ["Hardware", "DesktopComputer"], ["Software", "AppWindow"], ["Netzwerk und Internet", "Network"], ["E-Mail und Kommunikation", "Mail"],
-  ["Drucker und Scanner", "Printer"], ["Benutzerkonten und Zugänge", "KeyRound"], ["IT-Sicherheit", "ShieldCheck"], ["Telefonie", "Phone"],
-  ["Cloud-Dienste", "Cloud"], ["Sonstige Anfrage", "CircleHelp"],
+const categoryData = [
+  ["Hardware", "DesktopComputer"],
+  ["Software", "AppWindow"],
+  ["Netzwerk und Internet", "Network"],
+  ["E-Mail und Kommunikation", "Mail"],
+  ["Drucker und Scanner", "Printer"],
+  ["Benutzerkonten und Zugänge", "KeyRound"],
+  ["IT-Sicherheit", "ShieldCheck"],
+  ["Telefonie", "Phone"],
+  ["Cloud-Dienste", "Cloud"],
+  ["Sonstige Anfrage", "CircleHelp"],
 ] as const;
 
-const subjects = [
-  "Notebook startet nach Update nicht", "VPN-Verbindung bricht regelmäßig ab", "Passwort für Microsoft 365 zurücksetzen", "Drucker im zweiten Stock nicht erreichbar", "Outlook synchronisiert neue E-Mails nicht",
-  "Verdächtige E-Mail mit Anhang erhalten", "Neue Mitarbeiterin benötigt Zugänge", "WLAN im Besprechungsraum instabil", "Excel-Datei lässt sich nicht öffnen", "Telefonanlage zeigt keine Rufnummern",
-  "Bildschirm flackert über Dockingstation", "Berechtigung für Projektordner fehlt", "Teams-Kamera wird nicht erkannt", "Backup-Status für Server prüfen", "Webanwendung meldet Zertifikatsfehler",
-  "Scanner legt Dateien nicht im Netzlaufwerk ab", "OneDrive-Synchronisierung pausiert", "Arbeitsplatz für neuen Kollegen vorbereiten", "Antivirensoftware meldet Fund", "Langsame Anmeldung am Terminalserver",
-  "E-Mail-Verteiler aktualisieren", "Softwareinstallation für CAD-Anwendung", "Netzlaufwerk nach Passwortänderung getrennt", "Mobiltelefon mit Firmen-E-Mail einrichten", "Monatsbericht aus Ticketsystem exportieren",
+const slaData: Array<[string, TicketPriority, number, number]> = [
+  ["SLA Niedrig", "LOW", 480, 7200],
+  ["SLA Mittel", "MEDIUM", 240, 4320],
+  ["SLA Hoch", "HIGH", 120, 1440],
+  ["SLA Kritisch", "CRITICAL", 30, 240],
 ];
 
 async function main(): Promise<void> {
-  const passwordHashes = await Promise.all(["Admin123!", "Agent123!", "Kunde123!", "Support123!", "Kunde123!"].map((password) => bcrypt.hash(password, 12)));
-  const users = await Promise.all([
-    prisma.user.upsert({ where: { email: "admin@jam-it.local" }, update: {}, create: { firstName: "Anna", lastName: "Administrator", email: "admin@jam-it.local", passwordHash: passwordHashes[0]!, role: "ADMIN", company: "JAM IT Dienstleistungen", emailVerifiedAt: new Date() } }),
-    prisma.user.upsert({ where: { email: "agent@jam-it.local" }, update: {}, create: { firstName: "Markus", lastName: "Weber", email: "agent@jam-it.local", passwordHash: passwordHashes[1]!, role: "AGENT", company: "JAM IT Dienstleistungen", department: "Support", emailVerifiedAt: new Date() } }),
-    prisma.user.upsert({ where: { email: "kunde@jam-it.local" }, update: {}, create: { firstName: "Claudia", lastName: "Becker", email: "kunde@jam-it.local", passwordHash: passwordHashes[2]!, role: "CUSTOMER", company: "Becker & Partner GmbH", emailVerifiedAt: new Date() } }),
-    prisma.user.upsert({ where: { email: "support2@jam-it.local" }, update: {}, create: { firstName: "Tobias", lastName: "Klein", email: "support2@jam-it.local", passwordHash: passwordHashes[3]!, role: "AGENT", company: "JAM IT Dienstleistungen", department: "Infrastruktur", emailVerifiedAt: new Date() } }),
-    prisma.user.upsert({ where: { email: "maria@beispiel.local" }, update: {}, create: { firstName: "Maria", lastName: "Schulz", email: "maria@beispiel.local", passwordHash: passwordHashes[4]!, role: "CUSTOMER", company: "Schulz Logistik KG", emailVerifiedAt: new Date() } }),
+  await prisma.notification.deleteMany({ where: { id: { startsWith: "seed-notification-" } } });
+  await prisma.ticket.deleteMany({ where: { ticketNumber: { in: seedTicketNumbers } } });
+
+  const [adminPassword, agentPassword, customerPassword] = await Promise.all([
+    bcrypt.hash("Admin123!", 12),
+    bcrypt.hash("Agent123!", 12),
+    bcrypt.hash("Kunde123!", 12),
   ]);
-  const [admin, agent, customer, agentTwo, customerTwo] = users;
+  const [admin, agent, customer, secondCustomer] = await Promise.all([
+    prisma.user.upsert({
+      where: { email: "admin@jam-it.local" },
+      update: { firstName: "Jamal", lastName: "Lyncker", passwordHash: adminPassword, role: "ADMIN", company: "JAM IT Dienstleistungen", department: "Administration", position: "Systemadministrator", isActive: true },
+      create: { firstName: "Jamal", lastName: "Lyncker", email: "admin@jam-it.local", passwordHash: adminPassword, role: "ADMIN", company: "JAM IT Dienstleistungen", department: "Administration", position: "Systemadministrator", emailVerifiedAt: new Date() },
+    }),
+    prisma.user.upsert({
+      where: { email: "agent@jam-it.local" },
+      update: { firstName: "Laura", lastName: "Becker", passwordHash: agentPassword, role: "AGENT", company: "JAM IT Dienstleistungen", department: "Service Desk", position: "IT-Support-Spezialistin", isActive: true },
+      create: { firstName: "Laura", lastName: "Becker", email: "agent@jam-it.local", passwordHash: agentPassword, role: "AGENT", company: "JAM IT Dienstleistungen", department: "Service Desk", position: "IT-Support-Spezialistin", emailVerifiedAt: new Date() },
+    }),
+    prisma.user.upsert({
+      where: { email: "kunde@jam-it.local" },
+      update: { firstName: "Max", lastName: "Mustermann", passwordHash: customerPassword, role: "CUSTOMER", company: "Mustermann Consulting GmbH", department: "Vertrieb", position: "Teamleiter", isActive: true },
+      create: { firstName: "Max", lastName: "Mustermann", email: "kunde@jam-it.local", passwordHash: customerPassword, role: "CUSTOMER", company: "Mustermann Consulting GmbH", department: "Vertrieb", position: "Teamleiter", emailVerifiedAt: new Date() },
+    }),
+    prisma.user.upsert({
+      where: { email: "anna.schmidt@beispiel.local" },
+      update: { firstName: "Anna", lastName: "Schmidt", passwordHash: customerPassword, role: "CUSTOMER", company: "Schmidt Logistik KG", department: "Buchhaltung", position: "Sachbearbeiterin", isActive: true },
+      create: { firstName: "Anna", lastName: "Schmidt", email: "anna.schmidt@beispiel.local", passwordHash: customerPassword, role: "CUSTOMER", company: "Schmidt Logistik KG", department: "Buchhaltung", position: "Sachbearbeiterin", emailVerifiedAt: new Date() },
+    }),
+  ]);
 
   const teams = await Promise.all([
-    prisma.supportTeam.upsert({ where: { name: "Service Desk" }, update: {}, create: { name: "Service Desk", description: "Erste Anlaufstelle für alle Supportanfragen" } }),
-    prisma.supportTeam.upsert({ where: { name: "Infrastruktur" }, update: {}, create: { name: "Infrastruktur", description: "Netzwerk, Server und Cloud-Dienste" } }),
-    prisma.supportTeam.upsert({ where: { name: "Arbeitsplatz & Anwendungen" }, update: {}, create: { name: "Arbeitsplatz & Anwendungen", description: "Clients, Drucker und Geschäftsanwendungen" } }),
+    prisma.supportTeam.upsert({ where: { name: "Service Desk" }, update: { description: "Erste Anlaufstelle für alle Supportanfragen", isActive: true }, create: { name: "Service Desk", description: "Erste Anlaufstelle für alle Supportanfragen" } }),
+    prisma.supportTeam.upsert({ where: { name: "Infrastruktur" }, update: { description: "Netzwerk, Server und Cloud-Dienste", isActive: true }, create: { name: "Infrastruktur", description: "Netzwerk, Server und Cloud-Dienste" } }),
+    prisma.supportTeam.upsert({ where: { name: "Arbeitsplatz & Anwendungen" }, update: { description: "Clients, Drucker und Geschäftsanwendungen", isActive: true }, create: { name: "Arbeitsplatz & Anwendungen", description: "Clients, Drucker und Geschäftsanwendungen" } }),
   ]);
   await Promise.all([
-    prisma.teamMembership.upsert({ where: { teamId_userId: { teamId: teams[0]!.id, userId: agent!.id } }, update: {}, create: { teamId: teams[0]!.id, userId: agent!.id } }),
-    prisma.teamMembership.upsert({ where: { teamId_userId: { teamId: teams[1]!.id, userId: agentTwo!.id } }, update: {}, create: { teamId: teams[1]!.id, userId: agentTwo!.id } }),
-    prisma.teamMembership.upsert({ where: { teamId_userId: { teamId: teams[0]!.id, userId: admin!.id } }, update: {}, create: { teamId: teams[0]!.id, userId: admin!.id } }),
+    prisma.teamMembership.upsert({ where: { teamId_userId: { teamId: teams[0]!.id, userId: agent.id } }, update: {}, create: { teamId: teams[0]!.id, userId: agent.id } }),
+    prisma.teamMembership.upsert({ where: { teamId_userId: { teamId: teams[0]!.id, userId: admin.id } }, update: {}, create: { teamId: teams[0]!.id, userId: admin.id } }),
   ]);
 
   const categories = [];
-  for (const [index, [name, icon]] of categoryNames.entries()) categories.push(await prisma.category.upsert({ where: { name }, update: {}, create: { name, icon, description: `Supportanfragen im Bereich ${name}`, defaultPriority: index === 6 ? "HIGH" : "MEDIUM", defaultTeamId: teams[index % teams.length]!.id } }));
-  const slaData: Array<[string, TicketPriority, number, number]> = [["SLA Niedrig", "LOW", 480, 7200], ["SLA Mittel", "MEDIUM", 240, 4320], ["SLA Hoch", "HIGH", 120, 1440], ["SLA Kritisch", "CRITICAL", 30, 240]];
-  const slas = [];
-  for (const [name, priority, firstResponseMinutes, resolutionMinutes] of slaData) slas.push(await prisma.slaPolicy.upsert({ where: { name }, update: {}, create: { name, description: `Standardrichtlinie für Priorität ${priority}`, priority, firstResponseMinutes, resolutionMinutes, businessHoursOnly: priority !== "CRITICAL" } }));
-  const tags = [];
-  const tagData: Array<[string, string]> = [["Remote-Support", "#2F6B78"], ["Vor Ort", "#D4A74E"], ["Wiederkehrend", "#B7791F"], ["Sicherheitsrelevant", "#B42318"], ["VIP", "#123D34"]];
-  for (const [name, color] of tagData) tags.push(await prisma.tag.upsert({ where: { name }, update: {}, create: { name, color } }));
+  for (const [index, [name, icon]] of categoryData.entries()) {
+    categories.push(await prisma.category.upsert({
+      where: { name },
+      update: { icon, description: `Supportanfragen im Bereich ${name}`, defaultTeamId: teams[index % teams.length]!.id, isActive: true },
+      create: { name, icon, description: `Supportanfragen im Bereich ${name}`, defaultPriority: name === "IT-Sicherheit" ? "HIGH" : "MEDIUM", defaultTeamId: teams[index % teams.length]!.id },
+    }));
+  }
 
-  const statuses: TicketStatus[] = ["NEW", "OPEN", "ASSIGNED", "IN_PROGRESS", "WAITING_FOR_CUSTOMER", "WAITING_FOR_THIRD_PARTY", "RESOLVED", "CLOSED"];
-  const priorities: TicketPriority[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-  for (let index = 0; index < subjects.length; index += 1) {
+  const slas = [];
+  for (const [name, priority, firstResponseMinutes, resolutionMinutes] of slaData) {
+    slas.push(await prisma.slaPolicy.upsert({
+      where: { name },
+      update: { priority, firstResponseMinutes, resolutionMinutes, businessHoursOnly: false, isActive: true },
+      create: { name, description: `Standardrichtlinie für Priorität ${priority}`, priority, firstResponseMinutes, resolutionMinutes, businessHoursOnly: false },
+    }));
+  }
+
+  const tags = [];
+  for (const [name, color] of [["Remote-Support", "#2F6B78"], ["Vor Ort", "#D4A74E"], ["Wiederkehrend", "#B7791F"], ["Sicherheitsrelevant", "#B42318"], ["VIP", "#123D34"]] as const) {
+    tags.push(await prisma.tag.upsert({ where: { name }, update: { color }, create: { name, color } }));
+  }
+
+  const categoryByName = new Map(categories.map((category) => [category.name, category]));
+  const slaByPriority = new Map(slas.map((sla) => [sla.priority, sla]));
+  const now = Date.now();
+  const definitions: Array<{
+    subject: string;
+    description: string;
+    status: TicketStatus;
+    priority: TicketPriority;
+    category: string;
+    customerId: string;
+    assigned: boolean;
+    publicComment: string;
+    internalComment?: string;
+    tagIndex: number;
+  }> = [
+    { subject: "VPN-Verbindung funktioniert nicht", description: "Die VPN-Verbindung zum Firmennetzwerk bricht seit heute direkt nach der Anmeldung ab. Internetzugang und Zugangsdaten wurden bereits geprüft; ein Neustart des Notebooks hat das Problem nicht behoben.", status: "OPEN", priority: "HIGH", category: "Netzwerk und Internet", customerId: customer.id, assigned: false, publicComment: "Vielen Dank für die genaue Beschreibung. Wir prüfen aktuell den VPN-Gateway-Status und melden uns kurzfristig.", tagIndex: 0 },
+    { subject: "Outlook synchronisiert keine E-Mails", description: "Outlook zeigt seit dem Morgen keine neuen Nachrichten an. Der Webzugriff auf das Postfach funktioniert, Senden und Empfangen in der Desktop-Anwendung bleibt jedoch ohne Ergebnis.", status: "IN_PROGRESS", priority: "MEDIUM", category: "E-Mail und Kommunikation", customerId: customer.id, assigned: true, publicComment: "Wir haben die Synchronisierung des Outlook-Profils geprüft und arbeiten an einer Reparatur des lokalen Caches.", internalComment: "Interne Analyse: OST-Datei sichern und Profil bei unverändertem Fehler kontrolliert neu erstellen.", tagIndex: 2 },
+    { subject: "Drucker im Büro nicht erreichbar", description: "Der Netzwerkdrucker im zweiten Obergeschoss wird als offline angezeigt. Andere Kolleginnen und Kollegen können derzeit ebenfalls keine Dokumente an dieses Gerät senden.", status: "WAITING_FOR_CUSTOMER", priority: "LOW", category: "Drucker und Scanner", customerId: secondCustomer.id, assigned: true, publicComment: "Bitte prüfen Sie kurz, ob am Display des Druckers eine IP-Adresse und eine Fehlermeldung angezeigt werden, und senden Sie uns ein Foto.", tagIndex: 1 },
+    { subject: "Verdächtige E-Mail erhalten", description: "Eine unerwartete E-Mail fordert zur Anmeldung über einen externen Link auf und enthält zusätzlich einen unbekannten Anhang. Der Link und der Anhang wurden nicht geöffnet.", status: "RESOLVED", priority: "CRITICAL", category: "IT-Sicherheit", customerId: customer.id, assigned: true, publicComment: "Die Nachricht wurde als Phishing-Versuch bestätigt und zentral blockiert. Es sind keine weiteren Schritte auf Ihrem Gerät erforderlich.", internalComment: "Absenderdomain und Prüfsumme wurden in die zentrale Sperrliste aufgenommen; keine weiteren Empfänger betroffen.", tagIndex: 3 },
+    { subject: "Passwort für Mitarbeiterkonto zurücksetzen", description: "Nach mehreren fehlgeschlagenen Anmeldeversuchen ist das Benutzerkonto gesperrt. Ein neues temporäres Passwort wird für den Arbeitsbeginn benötigt.", status: "CLOSED", priority: "MEDIUM", category: "Benutzerkonten und Zugänge", customerId: secondCustomer.id, assigned: true, publicComment: "Das Konto wurde entsperrt und das temporäre Passwort über den vereinbarten sicheren Kontaktweg bereitgestellt.", tagIndex: 4 },
+  ];
+
+  for (const [index, definition] of definitions.entries()) {
+    const createdAt = new Date(now - (definitions.length - index) * 24 * 60 * 60_000);
+    const policy = slaByPriority.get(definition.priority)!;
     const number = `JAM-2026-${String(index + 1).padStart(6, "0")}`;
-    const priority = priorities[index % priorities.length]!;
-    const status = statuses[index % statuses.length]!;
-    const createdAt = new Date(Date.now() - (subjects.length - index) * 36 * 60 * 60_000);
-    const ticket = await prisma.ticket.upsert({
-      where: { ticketNumber: number }, update: {},
-      create: {
-        ticketNumber: number, subject: subjects[index]!, description: `Seit heute tritt folgendes Problem auf: ${subjects[index]!.toLowerCase()}. Die üblichen Neustart- und Verbindungsprüfungen wurden bereits durchgeführt. Bitte prüfen Sie die Ursache und geben Sie eine Rückmeldung.`, status, priority, source: index % 5 === 0 ? "PHONE" : "WEB", categoryId: categories[index % categories.length]!.id, customerId: index % 3 === 0 ? customerTwo!.id : customer!.id, createdById: index % 3 === 0 ? customerTwo!.id : customer!.id, assignedAgentId: status === "NEW" || status === "OPEN" ? null : (index % 2 ? agent!.id : agentTwo!.id), assignedTeamId: teams[index % teams.length]!.id, slaPolicyId: slas.find((sla) => sla.priority === priority)!.id, firstResponseDueAt: new Date(createdAt.getTime() + (priority === "CRITICAL" ? 30 : 240) * 60_000), resolutionDueAt: new Date(createdAt.getTime() + (priority === "CRITICAL" ? 240 : 4320) * 60_000), firstRespondedAt: ["NEW", "OPEN"].includes(status) ? null : new Date(createdAt.getTime() + 70 * 60_000), resolvedAt: ["RESOLVED", "CLOSED"].includes(status) ? new Date(createdAt.getTime() + 22 * 60 * 60_000) : null, closedAt: status === "CLOSED" ? new Date(createdAt.getTime() + 28 * 60 * 60_000) : null, customerRating: status === "CLOSED" ? 4 + (index % 2) : null, customerFeedback: status === "CLOSED" ? "Schnelle und verständliche Unterstützung, vielen Dank." : null, createdAt,
-        comments: { create: [{ content: "Vielen Dank für Ihre Anfrage. Wir prüfen das Anliegen und melden uns zeitnah.", type: "PUBLIC", isInternal: false, authorId: agent!.id, createdAt: new Date(createdAt.getTime() + 70 * 60_000) }, ...(index % 4 === 0 ? [{ content: "Interne Prüfung: Gerätekonfiguration und letzte Änderungen vergleichen.", type: "INTERNAL" as const, isInternal: true, authorId: agent!.id, createdAt: new Date(createdAt.getTime() + 90 * 60_000) }] : [])] },
-        history: { create: [{ changedById: index % 3 === 0 ? customerTwo!.id : customer!.id, action: "TICKET_CREATED", newValue: "NEW", createdAt }, ...(status !== "NEW" ? [{ changedById: agent!.id, action: "STATUS_CHANGED", field: "status", oldValue: "NEW", newValue: status, createdAt: new Date(createdAt.getTime() + 60 * 60_000) }] : [])] },
-        links: index % 5 === 0 ? { create: { url: "https://status.microsoft.com", title: "Statusseite des Anbieters", description: "Zur Prüfung möglicher Störungen", createdById: index % 3 === 0 ? customerTwo!.id : customer!.id } } : undefined,
-        tags: { create: { tagId: tags[index % tags.length]!.id } },
+    const respondedAt = definition.status === "OPEN" ? null : new Date(createdAt.getTime() + Math.min(60, policy.firstResponseMinutes) * 60_000);
+    const resolvedAt = ["RESOLVED", "CLOSED"].includes(definition.status) ? new Date(createdAt.getTime() + Math.min(180, policy.resolutionMinutes) * 60_000) : null;
+    const ticket = await prisma.ticket.create({
+      data: {
+        ticketNumber: number,
+        subject: definition.subject,
+        description: definition.description,
+        status: definition.status,
+        priority: definition.priority,
+        source: index === 4 ? "PHONE" : "WEB",
+        categoryId: categoryByName.get(definition.category)!.id,
+        customerId: definition.customerId,
+        createdById: definition.customerId,
+        assignedAgentId: definition.assigned ? agent.id : null,
+        assignedTeamId: teams[index % teams.length]!.id,
+        slaPolicyId: policy.id,
+        firstResponseDueAt: new Date(createdAt.getTime() + policy.firstResponseMinutes * 60_000),
+        resolutionDueAt: new Date(createdAt.getTime() + policy.resolutionMinutes * 60_000),
+        firstRespondedAt: respondedAt,
+        resolvedAt,
+        closedAt: definition.status === "CLOSED" && resolvedAt ? new Date(resolvedAt.getTime() + 60 * 60_000) : null,
+        customerRating: definition.status === "CLOSED" ? 5 : null,
+        customerFeedback: definition.status === "CLOSED" ? "Schnelle und verständliche Unterstützung – vielen Dank." : null,
+        createdAt,
+        comments: { create: [
+          { content: definition.publicComment, type: "PUBLIC", isInternal: false, authorId: agent.id, createdAt: new Date(createdAt.getTime() + 60 * 60_000), updatedAt: new Date(createdAt.getTime() + 60 * 60_000) },
+          ...(definition.internalComment ? [{ content: definition.internalComment, type: "INTERNAL" as const, isInternal: true, authorId: agent.id, createdAt: new Date(createdAt.getTime() + 90 * 60_000), updatedAt: new Date(createdAt.getTime() + 90 * 60_000) }] : []),
+        ] },
+        history: { create: [
+          { changedById: definition.customerId, action: "TICKET_CREATED", newValue: "NEW", createdAt },
+          ...(definition.status !== "NEW" ? [{ changedById: agent.id, action: "STATUS_CHANGED", field: "status", oldValue: "NEW", newValue: definition.status, createdAt: new Date(createdAt.getTime() + 45 * 60_000) }] : []),
+        ] },
+        tags: { create: { tagId: tags[definition.tagIndex]!.id } },
+        links: index === 0 ? { create: { url: "https://status.microsoft.com", title: "Microsoft-Statusseite", description: "Prüfung möglicher externer Störungen", createdById: customer.id } } : undefined,
       },
     });
-    if (index < 5) await prisma.notification.upsert({ where: { id: `seed-notification-${index}` }, update: {}, create: { id: `seed-notification-${index}`, userId: customer!.id, type: "STATUS_CHANGED", title: "Ticket aktualisiert", message: `${ticket.ticketNumber} wurde bearbeitet.`, entityType: "Ticket", entityId: ticket.id, readAt: index > 1 ? new Date() : null } });
+    await prisma.notification.create({ data: { id: `seed-notification-${index}`, userId: definition.customerId, type: "STATUS_CHANGED", title: "Ticket aktualisiert", message: `${ticket.ticketNumber} wurde bearbeitet.`, entityType: "Ticket", entityId: ticket.id, readAt: index > 1 ? new Date() : null } });
   }
+
+  await prisma.ticketSequence.upsert({ where: { year: 2026 }, update: { lastValue: 5 }, create: { year: 2026, lastValue: 5 } });
 
   const sampleTicket = await prisma.ticket.findUniqueOrThrow({ where: { ticketNumber: "JAM-2026-000001" } });
   const samplePath = resolve(process.cwd(), "uploads", "seed-diagnose.log");
-  const sampleContent = "2026-08-06 09:15:22 INFO JAM IT HelpDesk Beispieldiagnose\n2026-08-06 09:15:23 WARN Netzwerkantwort verzögert\n";
+  const sampleContent = "2026-08-10 09:15:22 INFO VPN-Client gestartet\n2026-08-10 09:15:24 WARN Gateway nicht erreichbar\n";
   await mkdir(resolve(process.cwd(), "uploads"), { recursive: true });
   await writeFile(samplePath, sampleContent, "utf8");
-  await prisma.attachment.upsert({ where: { storageKey: "seed-diagnose.log" }, update: {}, create: { originalName: "diagnose.log", storedName: "seed-diagnose.log", storageKey: "seed-diagnose.log", filePath: samplePath, mimeType: "text/plain", detectedMimeType: "text/plain", fileExtension: ".log", fileSize: Buffer.byteLength(sampleContent), checksum: createHash("sha256").update(sampleContent).digest("hex"), attachmentType: "LOG", visibility: "PUBLIC", scanStatus: "CLEAN", ticketId: sampleTicket.id, uploadedById: customer!.id } });
+  await prisma.attachment.upsert({
+    where: { storageKey: "seed-diagnose.log" },
+    update: { ticketId: sampleTicket.id, uploadedById: customer.id, filePath: samplePath, fileSize: Buffer.byteLength(sampleContent), checksum: createHash("sha256").update(sampleContent).digest("hex") },
+    create: { originalName: "vpn-diagnose.log", storedName: "seed-diagnose.log", storageKey: "seed-diagnose.log", filePath: samplePath, mimeType: "text/plain", detectedMimeType: "text/plain", fileExtension: ".log", fileSize: Buffer.byteLength(sampleContent), checksum: createHash("sha256").update(sampleContent).digest("hex"), attachmentType: "LOG", visibility: "PUBLIC", scanStatus: "CLEAN", ticketId: sampleTicket.id, uploadedById: customer.id },
+  });
 
   const articles: Array<[string, string, string, string]> = [
     ["VPN-Verbindung prüfen", "vpn-verbindung-pruefen", "Schritte zur Behebung typischer VPN-Verbindungsprobleme.", "Prüfen Sie zuerst Ihre Internetverbindung. Starten Sie anschließend den VPN-Client neu und kontrollieren Sie, ob Datum und Uhrzeit des Geräts korrekt eingestellt sind."],
     ["Sicher mit verdächtigen E-Mails umgehen", "verdaechtige-emails", "So erkennen und melden Sie mögliche Phishing-Nachrichten.", "Öffnen Sie keine unerwarteten Anhänge oder Links. Leiten Sie verdächtige Nachrichten als Anlage an den Service Desk weiter und löschen Sie die Nachricht erst nach Rückmeldung."],
     ["Drucker wieder verbinden", "drucker-wieder-verbinden", "Anleitung zur erneuten Verbindung eines Netzwerkdruckers.", "Prüfen Sie die Stromversorgung und Netzwerkverbindung. Entfernen Sie pausierte Druckaufträge und wählen Sie den korrekten Standarddrucker aus."],
   ];
-  for (const [index, [title, slug, summary, content]] of articles.entries()) await prisma.knowledgeBaseArticle.upsert({ where: { slug }, update: {}, create: { title, slug, summary, content, categoryId: categories[index]!.id, authorId: agent!.id, status: "PUBLISHED", publishedAt: new Date() } });
-  console.log("Seed abgeschlossen: Demo-Benutzer, Teams, Kategorien, 25 Tickets und Wissensartikel wurden angelegt.");
+  for (const [index, [title, slug, summary, content]] of articles.entries()) {
+    await prisma.knowledgeBaseArticle.upsert({ where: { slug }, update: { title, summary, content, categoryId: categories[index]!.id, authorId: agent.id, status: "PUBLISHED" }, create: { title, slug, summary, content, categoryId: categories[index]!.id, authorId: agent.id, status: "PUBLISHED", publishedAt: new Date() } });
+  }
+
+  console.log("Seed abgeschlossen: 4 Demo-Benutzer, 3 Teams, 10 Kategorien, 5 Tickets und 3 Wissensartikel wurden angelegt.");
 }
 
-main().catch((error: unknown) => { console.error(error); process.exitCode = 1; }).finally(async () => prisma.$disconnect());
+main()
+  .catch((error: unknown) => { console.error("Seed fehlgeschlagen:", error); process.exitCode = 1; })
+  .finally(async () => prisma.$disconnect());
