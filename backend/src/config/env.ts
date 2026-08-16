@@ -37,11 +37,12 @@ function requiredSecret(name: "DATABASE_URL" | "JWT_SECRET" | "REFRESH_TOKEN_SEC
 const databaseUrl = requiredSecret("DATABASE_URL", "postgresql://postgres:password@localhost:5432/jam_it_helpdesk");
 const jwtSecret = requiredSecret("JWT_SECRET", "development-only-access-secret-change-me");
 const refreshTokenSecret = requiredSecret("REFRESH_TOKEN_SECRET", "development-only-refresh-secret-change-me");
-const frontendUrl = parsed.FRONTEND_URL ?? (production ? undefined : "http://localhost:5173");
+const configuredFrontendUrl = parsed.FRONTEND_URL ?? (production ? undefined : "http://localhost:5173");
 
-if (!frontendUrl) {
+if (!configuredFrontendUrl) {
   throw new Error("FRONTEND_URL is required in production.");
 }
+const frontendUrl = new URL(configuredFrontendUrl).origin;
 
 if (production && parsed.MAIL_PROVIDER === "smtp" && (!parsed.SMTP_HOST || !parsed.SMTP_USER || !parsed.SMTP_PASSWORD)) {
   throw new Error("SMTP_HOST, SMTP_USER and SMTP_PASSWORD are required when MAIL_PROVIDER=smtp in production.");

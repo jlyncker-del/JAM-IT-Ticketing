@@ -1,0 +1,55 @@
+databases:
+  - name: jam-it-helpdesk-db
+    databaseName: jam_it_helpdesk
+    user: jam_it_helpdesk
+    plan: free
+    region: frankfurt
+
+services:
+  - type: web
+    name: JAM-IT-Ticketing
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:render
+    initialDeployHook: npm run db:seed
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jam-it-helpdesk-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: MAIL_PROVIDER
+        value: development
+      - key: UPLOAD_STORAGE
+        value: local
+      - key: UPLOAD_DIR
+        value: uploads
+
+  - type: web
+    name: JAM-IT-Ticketing-1
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci --include=dev && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_APP_NAME
+        value: JAM IT HelpDesk
+      - key: VITE_COMPANY_NAME
+        value: JAM IT Dienstleistungen
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

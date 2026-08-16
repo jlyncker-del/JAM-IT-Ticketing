@@ -125,11 +125,18 @@ Swagger UI ist unter `http://localhost:5000/api-docs` verfügbar. Alle fachliche
 
 ## Deployment auf Render
 
-`render.yaml` definiert PostgreSQL, das Backend als Web Service und das Frontend als Static Site. Die Build- und Startbefehle laufen jeweils in `backend/` beziehungsweise `frontend/`. Vor jedem Backend-Deploy werden die Prisma-Migrationen mit `prisma migrate deploy` ausgeführt.
+`render.yaml` definiert PostgreSQL, das Backend als Web Service und das Frontend als Static Site. Die Build- und Startbefehle laufen jeweils in `backend/` beziehungsweise `frontend/`. Beim Start des Backends werden die Prisma-Migrationen ausgeführt; der Initial-Deploy-Hook legt die Demo-Daten genau einmal an.
 
-In Render müssen insbesondere `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `FRONTEND_URL` und `VITE_API_URL` gesetzt werden. `VITE_API_URL` muss die öffentliche API-Adresse inklusive `/api/v1` enthalten. SMTP ist optional; für den E-Mail-Versand müssen `MAIL_PROVIDER=smtp`, `SMTP_HOST`, `SMTP_USER` und `SMTP_PASSWORD` konfiguriert werden.
+Beim ersten Blueprint-Deploy fragt Render nach zwei Werten:
 
-Für Uploads ist im Blueprint ein persistenter Datenträger unter `/var/data` vorgesehen. Ohne Persistent Disk ist das lokale Dateisystem eines Render Web Service nicht dauerhaft. Der aktuelle lokale Speicher eignet sich für eine einzelne Backend-Instanz; horizontale Skalierung benötigt später einen S3-kompatiblen Speicher.
+- `FRONTEND_URL` am Backend: die öffentliche Adresse der Static Site, aktuell `https://jam-it-ticketing-1.onrender.com` (ein abschließender Slash wird automatisch normalisiert)
+- `VITE_API_URL` am Frontend: die öffentliche Adresse des Backend-Service, aktuell `https://jam-it-ticketing.onrender.com` (`/api/v1` wird automatisch ergänzt)
+
+`JWT_SECRET` und `REFRESH_TOKEN_SECRET` erzeugt der Blueprint automatisch. Ein Produktionsbuild ohne `VITE_API_URL` schlägt absichtlich fehl, statt eine nicht funktionierende App mit `localhost` als API auszuliefern. SMTP ist optional; für den E-Mail-Versand müssen `MAIL_PROVIDER=smtp`, `SMTP_HOST`, `SMTP_USER` und `SMTP_PASSWORD` konfiguriert werden.
+
+Bei bereits manuell angelegten Render-Services müssen die beiden URLs unter **Environment** gesetzt und beide Services danach neu deployt werden. Für eine bereits vorhandene, aber noch leere Datenbank ist außerdem einmalig im Backend-Service `npm run db:seed` auszuführen.
+
+Der kostenlose Blueprint speichert Uploads im lokalen Dateisystem. Dieses ist bei Render nicht dauerhaft. Für einen produktiven Betrieb muss am Backend ein Persistent Disk eingebunden und `UPLOAD_DIR` auf dessen Mount-Pfad gesetzt werden; horizontale Skalierung benötigt später einen S3-kompatiblen Speicher.
 
 ## Hinweise
 

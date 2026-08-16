@@ -12,8 +12,27 @@ export const brandColors = {
   info: "#2F6B78",
 } as const;
 
+export function normalizeApiUrl(value: string | undefined, production = import.meta.env.PROD): string {
+  const configured = value?.trim();
+  if (!configured) {
+    if (production) throw new Error("VITE_API_URL muss für den Produktionsbuild gesetzt sein.");
+    return "http://localhost:5000/api/v1";
+  }
+
+  const url = new URL(configured);
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error("VITE_API_URL muss eine HTTP- oder HTTPS-Adresse sein.");
+  }
+
+  url.search = "";
+  url.hash = "";
+  const path = url.pathname.replace(/\/+$/, "");
+  url.pathname = path === "" || path === "/" || path === "/api" ? "/api/v1" : path;
+  return url.toString().replace(/\/$/, "");
+}
+
 export const appConfig = {
   appName: import.meta.env.VITE_APP_NAME ?? "JAM IT HelpDesk",
   companyName: import.meta.env.VITE_COMPANY_NAME ?? "JAM IT Dienstleistungen",
-  apiUrl: import.meta.env.VITE_API_URL ?? "http://localhost:5000/api/v1",
+  apiUrl: normalizeApiUrl(import.meta.env.VITE_API_URL),
 } as const;
