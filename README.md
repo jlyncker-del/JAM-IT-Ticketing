@@ -2,7 +2,6 @@
 
 JAM IT HelpDesk ist ein webbasiertes Ticketsystem für IT-Support-Anfragen von JAM IT Dienstleistungen. Kunden erstellen Tickets mit Links und Anhängen. Supportmitarbeitende bearbeiten, priorisieren und dokumentieren die Vorgänge. Administratoren verwalten Benutzer, Teams und Stammdaten.
 
-Die Oberfläche ist deutsch, responsiv und verwendet die JAM-IT-Farben Grün `#123D34`, Creme `#F8F4E9` und Gold `#D4A74E`. Visuelle Hover-Effekte werden bewusst nicht eingesetzt.
 
 ## Funktionen
 
@@ -21,11 +20,10 @@ Die Oberfläche ist deutsch, responsiv und verwendet die JAM-IT-Farben Grün `#1
 
 - Frontend: React, TypeScript, Vite, React Router, TanStack Query und Tailwind CSS
 - Backend: Node.js, Express, TypeScript, Prisma, PostgreSQL und JWT
-- Tests: Vitest, React Testing Library und Supertest
 
 ## Projektstruktur
 
-```text
+
 jam-it-helpdesk/
 ├── backend/
 │   ├── prisma/        # Schema, Migrationen und Seed
@@ -36,7 +34,7 @@ jam-it-helpdesk/
 ├── render.yaml
 ├── package.json
 └── README.md
-```
+
 
 ## Installation
 
@@ -47,22 +45,6 @@ npm install
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
-
-## Umgebungsvariablen
-
-Die vollständigen Vorlagen stehen in `backend/.env.example` und `frontend/.env.example`.
-
-Wesentliche Backend-Variablen:
-
-```env
-DATABASE_URL=postgresql://postgres:password@localhost:5432/jam_it_helpdesk
-JWT_SECRET=replace_with_a_long_random_secret
-REFRESH_TOKEN_SECRET=replace_with_another_long_random_secret
-FRONTEND_URL=http://localhost:5173
-UPLOAD_STORAGE=local
-```
-
-Das Frontend verwendet `VITE_API_URL`, lokal beispielsweise `http://localhost:5000/api/v1`. Echte Zugangsdaten gehören ausschließlich in lokale oder bei Render hinterlegte Umgebungsvariablen.
 
 ## Datenbank
 
@@ -85,7 +67,7 @@ npm run dev
 
 - Frontend: `http://localhost:5173`
 - API: `http://localhost:5000/api/v1`
-- Healthcheck: `http://localhost:5000/health`
+
 
 Produktionsbuild und Backendstart:
 
@@ -105,7 +87,7 @@ npm test
 Die API-Integrationstests benötigen eine separate, migrierte und geseedete Testdatenbank:
 
 ```bash
-TEST_DATABASE_URL=postgresql://postgres:password@localhost:5432/jam_it_helpdesk_test npm run test -w backend
+DATABASE_URL=postgresql://postgres:password@localhost:5432/jam_it_helpdesk_test npm run test -w backend
 ```
 
 ## Demo-Benutzer
@@ -113,15 +95,7 @@ TEST_DATABASE_URL=postgresql://postgres:password@localhost:5432/jam_it_helpdesk_
 | Rolle | Name | E-Mail | Passwort |
 |---|---|---|---|
 | Administrator | Jamal Lyncker | `admin@jam-it.local` | `Admin123!` |
-| Support | Laura Becker | `agent@jam-it.local` | `Agent123!` |
 | Kunde | Max Mustermann | `kunde@jam-it.local` | `Kunde123!` |
-| Kunde | Anna Schmidt | `anna.schmidt@beispiel.local` | `Kunde123!` |
-
-Die Demo-Passwörter müssen vor einem produktiven Einsatz ersetzt werden.
-
-## API / Swagger
-
-Swagger UI ist unter `http://localhost:5000/api-docs` verfügbar. Alle fachlichen Endpunkte liegen unter `/api/v1`; geschützte Aufrufe verwenden ein Bearer-Token.
 
 ## Deployment auf Render
 
@@ -133,14 +107,3 @@ Beim ersten Blueprint-Deploy fragt Render nach zwei Werten:
 - `VITE_API_URL` am Frontend: die öffentliche Adresse des Backend-Service, aktuell `https://jam-it-ticketing.onrender.com` (`/api/v1` wird automatisch ergänzt)
 
 `JWT_SECRET` und `REFRESH_TOKEN_SECRET` erzeugt der Blueprint automatisch. Ein Produktionsbuild ohne `VITE_API_URL` schlägt absichtlich fehl, statt eine nicht funktionierende App mit `localhost` als API auszuliefern. SMTP ist optional; für den E-Mail-Versand müssen `MAIL_PROVIDER=smtp`, `SMTP_HOST`, `SMTP_USER` und `SMTP_PASSWORD` konfiguriert werden.
-
-Bei bereits manuell angelegten Render-Services müssen die beiden URLs unter **Environment** gesetzt und beide Services danach neu deployt werden. Für eine bereits vorhandene, aber noch leere Datenbank ist außerdem einmalig im Backend-Service `npm run db:seed` auszuführen.
-
-Der kostenlose Blueprint speichert Uploads im lokalen Dateisystem. Dieses ist bei Render nicht dauerhaft. Für einen produktiven Betrieb muss am Backend ein Persistent Disk eingebunden und `UPLOAD_DIR` auf dessen Mount-Pfad gesetzt werden; horizontale Skalierung benötigt später einen S3-kompatiblen Speicher.
-
-## Hinweise
-
-- Erlaubte Uploadtypen und Größen werden im Frontend und erneut im Backend geprüft.
-- Interne Kommentare und Anhänge sind für Kunden nicht sichtbar.
-- Die SLA-Berechnung verwendet derzeit Kalenderzeit ohne Feiertags- oder Geschäftszeitenkalender.
-- Der Seed ist für Entwicklung und Präsentation gedacht, nicht für produktive Daten.
