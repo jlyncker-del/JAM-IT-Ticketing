@@ -14,7 +14,6 @@ JAM IT HelpDesk ist ein webbasiertes Ticketsystem für IT-Support-Anfragen von J
 - Dashboard, Benachrichtigungen und Wissensdatenbank
 - Benutzer-, Team-, Kategorie-, Tag- und SLA-Verwaltung
 - Berichte, CSV-Export und Audit-Protokoll
-- OpenAPI-Dokumentation mit Swagger UI
 
 ## Technologien
 
@@ -106,4 +105,4 @@ Beim ersten Blueprint-Deploy fragt Render nach zwei Werten:
 - `FRONTEND_URL` am Backend: die öffentliche Adresse der Static Site, aktuell `https://jam-it-ticketing-1.onrender.com` (ein abschließender Slash wird automatisch normalisiert)
 - `VITE_API_URL` am Frontend: die öffentliche Adresse des Backend-Service, aktuell `https://jam-it-ticketing.onrender.com` (`/api/v1` wird automatisch ergänzt)
 
-`JWT_SECRET` und `REFRESH_TOKEN_SECRET` erzeugt der Blueprint automatisch. Ein Produktionsbuild ohne `VITE_API_URL` schlägt absichtlich fehl, statt eine nicht funktionierende App mit `localhost` als API auszuliefern. SMTP ist optional; für den E-Mail-Versand müssen `MAIL_PROVIDER=smtp`, `SMTP_HOST`, `SMTP_USER` und `SMTP_PASSWORD` konfiguriert werden.
+`JWT_SECRET` und `REFRESH_TOKEN_SECRET` erzeugt der Blueprint automatisch. Ein Produktionsbuild ohne `VITE_API_URL` schlägt absichtlich fehl, statt eine nicht funktionierende App mit `localhost` als API auszuliefern. SMTP ist optional; für den E-Mail-Versand müssen `MAIL_PROVIDER=smtp`, `SMTP_HOST`, `SMTP_USER` und `SMTP_PASSWORD` konfiguriert werden.c

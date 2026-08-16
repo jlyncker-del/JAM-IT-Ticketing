@@ -1,13 +1,28 @@
 {
   "name": "jam-it-helpdesk",
   "private": true,
-  "engines": {"node": "22.x", "npm": ">=10.9.0 <12"},
-  "workspaces": ["frontend", "backend"],
+  "engines": {
+    "node": "22.x",
+    "npm": ">=10.9.0 <12"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
     "dev": "concurrently -n backend,frontend -c green,yellow \"npm run dev -w backend\" \"npm run dev -w frontend\"",
     "build": "npm run build -w backend && npm run build -w frontend",
     "test": "npm run test -w backend && npm run test -w frontend",
     "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend"
   },
-  "devDependencies": {"concurrently": "latest"}
+  "devDependencies": {
+    "concurrently": "latest"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.3": true,
+    "prisma@6.19.3": true
+  }
 }
