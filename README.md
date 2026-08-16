@@ -40,7 +40,7 @@ jam-it-helpdesk/
 
 ## Installation
 
-Voraussetzungen: Node.js 22.13+, npm 11+ und PostgreSQL 16+.
+Voraussetzungen: Node.js 22 LTS, npm 10.9+ und PostgreSQL 16+.
 
 ```bash
 npm install
@@ -127,7 +127,7 @@ Swagger UI ist unter `http://localhost:5000/api-docs` verfügbar. Alle fachliche
 
 `render.yaml` definiert PostgreSQL, das Backend als Web Service und das Frontend als Static Site. Die Build- und Startbefehle laufen jeweils in `backend/` beziehungsweise `frontend/`. Vor jedem Backend-Deploy werden die Prisma-Migrationen mit `prisma migrate deploy` ausgeführt.
 
-In Render müssen insbesondere `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `FRONTEND_URL`, `VITE_API_URL` und die SMTP-Werte gesetzt werden. `VITE_API_URL` muss die öffentliche API-Adresse inklusive `/api/v1` enthalten.
+In Render müssen insbesondere `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `FRONTEND_URL` und `VITE_API_URL` gesetzt werden. `VITE_API_URL` muss die öffentliche API-Adresse inklusive `/api/v1` enthalten. SMTP ist optional; für den E-Mail-Versand müssen `MAIL_PROVIDER=smtp`, `SMTP_HOST`, `SMTP_USER` und `SMTP_PASSWORD` konfiguriert werden.
 
 Für Uploads ist im Blueprint ein persistenter Datenträger unter `/var/data` vorgesehen. Ohne Persistent Disk ist das lokale Dateisystem eines Render Web Service nicht dauerhaft. Der aktuelle lokale Speicher eignet sich für eine einzelne Backend-Instanz; horizontale Skalierung benötigt später einen S3-kompatiblen Speicher.
 

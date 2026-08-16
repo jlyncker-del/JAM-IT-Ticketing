@@ -2,7 +2,7 @@
   "name": "@jam-it/backend",
   "private": true,
   "type": "module",
-  "engines": {"node": ">=22.13.0", "npm": ">=11"},
+  "engines": {"node": "22.x", "npm": ">=10.9.0 <12"},
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && prisma generate && tsc -p tsconfig.json",
@@ -34,7 +34,7 @@
     "@types/express": "latest",
     "@types/jsonwebtoken": "latest",
     "@types/multer": "latest",
-    "@types/node": "latest",
+    "@types/node": "22.x",
     "@types/nodemailer": "latest",
     "@types/supertest": "latest",
     "@types/swagger-ui-express": "latest",

@@ -1,7 +1,7 @@
 {
   "name": "jam-it-helpdesk",
   "private": true,
-  "engines": {"node": ">=22.13.0", "npm": ">=11"},
+  "engines": {"node": "22.x", "npm": ">=10.9.0 <12"},
   "workspaces": ["frontend", "backend"],
   "scripts": {
     "dev": "concurrently -n backend,frontend -c green,yellow \"npm run dev -w backend\" \"npm run dev -w frontend\"",
