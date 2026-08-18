@@ -32,7 +32,7 @@ services:
       - key: MAIL_PROVIDER
         value: development
       - key: UPLOAD_STORAGE
-        value: local
+        value: database
       - key: UPLOAD_DIR
         value: uploads
 

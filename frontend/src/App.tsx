@@ -29,13 +29,17 @@ export default function App() {
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/tickets" element={<TicketListPage />} />
       <Route path="/tickets/neu" element={<CreateTicketPage />} />
+      <Route path="/tickets/new" element={<Navigate to="/tickets/neu" replace />} />
       <Route path="/tickets/:id" element={<TicketDetailPage />} />
       <Route path="/wissen" element={<KnowledgeBasePage />} />
       <Route path="/benachrichtigungen" element={<NotificationsPage />} />
       <Route path="/profil" element={<ProfilePage />} />
+      <Route path="/profile" element={<Navigate to="/profil" replace />} />
       <Route path="/verwaltung/benutzer" element={<ProtectedRoute roles={["ADMIN"]}><UserManagementPage /></ProtectedRoute>} />
+      <Route path="/users" element={<ProtectedRoute roles={["ADMIN"]}><Navigate to="/verwaltung/benutzer" replace /></ProtectedRoute>} />
       <Route path="/verwaltung/teams" element={<ProtectedRoute roles={["ADMIN"]}><ManagementPage resource="teams" /></ProtectedRoute>} />
       <Route path="/verwaltung/kategorien" element={<ProtectedRoute roles={["ADMIN"]}><ManagementPage resource="categories" /></ProtectedRoute>} />
+      <Route path="/categories" element={<ProtectedRoute roles={["ADMIN"]}><Navigate to="/verwaltung/kategorien" replace /></ProtectedRoute>} />
       <Route path="/verwaltung/tags" element={<ProtectedRoute roles={["ADMIN"]}><ManagementPage resource="tags" /></ProtectedRoute>} />
       <Route path="/verwaltung/sla" element={<ProtectedRoute roles={["ADMIN"]}><ManagementPage resource="sla-policies" /></ProtectedRoute>} />
       <Route path="/berichte" element={<ProtectedRoute roles={["ADMIN"]}><ReportsPage /></ProtectedRoute>} />

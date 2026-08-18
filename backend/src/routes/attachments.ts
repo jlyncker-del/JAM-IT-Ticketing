@@ -3,7 +3,7 @@ import { prisma } from "../config/prisma.js";
 import { AppError } from "../errors/AppError.js";
 import { authenticate, authorize } from "../middleware/auth.js";
 import { writeAudit } from "../middleware/audit.js";
-import { ensureTicketAccess } from "../services/ticketService.js";
+import { attachmentPublicSelect, ensureTicketAccess } from "../services/ticketService.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { success } from "../utils/responses.js";
 import { storageService } from "../services/storageService.js";
@@ -21,30 +21,42 @@ async function accessibleAttachment(id: string, user: Express.User) {
 
 attachmentRouter.get("/:id", asyncHandler(async (request, response) => {
   const attachment = await accessibleAttachment(String(request.params.id), request.user!);
-  return success(response, { ...attachment, filePath: undefined, storedName: undefined });
+  const metadata = Object.fromEntries(Object.keys(attachmentPublicSelect).map((key) => [key, attachment[key as keyof typeof attachment]]));
+  return success(response, metadata);
 }));
+
+async function attachmentContent(attachment: Awaited<ReturnType<typeof accessibleAttachment>>): Promise<Buffer> {
+  if (attachment.content) return Buffer.from(attachment.content);
+  try {
+    return await storageService.read(attachment.filePath);
+  } catch {
+    throw new AppError("Der Dateiinhalt ist nach einem früheren Serverneustart nicht mehr verfügbar.", 410, "ATTACHMENT_CONTENT_MISSING");
+  }
+}
 
 attachmentRouter.get("/:id/download", asyncHandler(async (request, response) => {
   const attachment = await accessibleAttachment(String(request.params.id), request.user!);
+  const content = await attachmentContent(attachment);
   response.setHeader("Content-Type", attachment.detectedMimeType);
   response.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(attachment.originalName)}`);
   response.setHeader("X-Content-Type-Options", "nosniff");
   await writeAudit(request, "ATTACHMENT_DOWNLOADED", "Attachment", attachment.id);
-  storageService.createReadStream(attachment.filePath).pipe(response);
+  response.send(content);
 }));
 
 attachmentRouter.get("/:id/preview", asyncHandler(async (request, response) => {
   const attachment = await accessibleAttachment(String(request.params.id), request.user!);
+  const content = await attachmentContent(attachment);
   if (attachment.attachmentType === "IMAGE") {
     response.setHeader("Content-Type", attachment.detectedMimeType);
     response.setHeader("Content-Disposition", "inline");
     response.setHeader("X-Content-Type-Options", "nosniff");
-    storageService.createReadStream(attachment.filePath).pipe(response);
+    response.send(content);
     return;
   }
   if (attachment.attachmentType !== "LOG") throw new AppError("Für diesen Dateityp ist keine Vorschau verfügbar.", 400, "PREVIEW_UNAVAILABLE");
-  const content = (await storageService.readText(attachment.filePath, 100_000)).split(/\r?\n/).slice(0, 500).join("\n");
-  response.type("text/plain; charset=utf-8").send(content);
+  const preview = content.toString("utf8", 0, 100_000).split(/\r?\n/).slice(0, 500).join("\n");
+  response.type("text/plain; charset=utf-8").send(preview);
 }));
 
 attachmentRouter.delete("/:id", authorize("AGENT", "ADMIN"), asyncHandler(async (request, response) => {

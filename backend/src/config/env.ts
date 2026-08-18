@@ -9,7 +9,7 @@ const baseSchema = z.object({
   REFRESH_TOKEN_SECRET: z.string().min(32).optional(),
   JWT_EXPIRES_IN: z.string().default("1d"),
   FRONTEND_URL: z.string().url().optional(),
-  UPLOAD_STORAGE: z.enum(["local", "s3"]).default("local"),
+  UPLOAD_STORAGE: z.enum(["database", "local", "s3"]).default("database"),
   UPLOAD_DIR: z.string().default("uploads"),
   MAX_FILE_SIZE: z.coerce.number().int().positive().default(15 * 1024 * 1024),
   MAX_FILES_PER_REQUEST: z.coerce.number().int().positive().max(20).default(10),

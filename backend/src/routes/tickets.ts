@@ -9,7 +9,6 @@ import { assignmentSchema, commentSchema, createTicketSchema, linkSchema, priori
 import { accessWhere, assertValidTransition, ensureTicketAccess, nextTicketNumber, slaForPriority, ticketInclude } from "../services/ticketService.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { attachmentService } from "../services/attachmentService.js";
-import { storageService } from "../services/storageService.js";
 import { success } from "../utils/responses.js";
 import { z } from "zod";
 
@@ -116,7 +115,6 @@ ticketRouter.delete("/:id", asyncHandler(async (request, response) => {
   if (current.status !== "DRAFT") throw new AppError("Nur Entwürfe können gelöscht werden.", 409, "NOT_A_DRAFT");
   await writeAudit(request, "DRAFT_DELETED", "Ticket", current.id, { ticketNumber: current.ticketNumber });
   await prisma.ticket.delete({ where: { id: current.id } });
-  await Promise.all(current.attachments.map((attachment) => storageService.delete(attachment.filePath).catch(() => undefined)));
   return success(response, null, "Der Entwurf wurde gelöscht.");
 }));
 

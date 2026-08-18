@@ -238,6 +238,7 @@ model Attachment {
   detectedMimeType String
   fileExtension    String
   fileSize         Int
+  content          Bytes?
   checksum         String
   attachmentType   AttachmentType
   visibility       AttachmentVisibility @default(PUBLIC)

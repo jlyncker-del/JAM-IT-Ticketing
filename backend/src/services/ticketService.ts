@@ -4,6 +4,22 @@ import { VALID_STATUS_TRANSITIONS } from "../constants/tickets.js";
 import { AppError } from "../errors/AppError.js";
 import { formatTicketNumber } from "../utils/ticketNumber.js";
 
+export const attachmentPublicSelect = {
+  id: true,
+  originalName: true,
+  mimeType: true,
+  detectedMimeType: true,
+  fileExtension: true,
+  fileSize: true,
+  attachmentType: true,
+  visibility: true,
+  scanStatus: true,
+  ticketId: true,
+  commentId: true,
+  uploadedById: true,
+  createdAt: true,
+} satisfies Prisma.AttachmentSelect;
+
 export const ticketInclude = {
   category: true,
   customer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, company: true } },
@@ -14,8 +30,8 @@ export const ticketInclude = {
   tags: { include: { tag: true } },
   watchers: { include: { user: { select: { id: true, firstName: true, lastName: true } } } },
   links: true,
-  attachments: true,
-  comments: { where: { deletedAt: null }, include: { author: { select: { id: true, firstName: true, lastName: true, role: true } }, attachments: true }, orderBy: { createdAt: "asc" as const } },
+  attachments: { select: attachmentPublicSelect },
+  comments: { where: { deletedAt: null }, include: { author: { select: { id: true, firstName: true, lastName: true, role: true } }, attachments: { select: attachmentPublicSelect } }, orderBy: { createdAt: "asc" as const } },
   history: { include: { changedBy: { select: { firstName: true, lastName: true } } }, orderBy: { createdAt: "desc" as const } },
 } satisfies Prisma.TicketInclude;
 

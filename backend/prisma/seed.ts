@@ -166,8 +166,8 @@ async function main(): Promise<void> {
   await writeFile(samplePath, sampleContent, "utf8");
   await prisma.attachment.upsert({
     where: { storageKey: "seed-diagnose.log" },
-    update: { ticketId: sampleTicket.id, uploadedById: customer.id, filePath: samplePath, fileSize: Buffer.byteLength(sampleContent), checksum: createHash("sha256").update(sampleContent).digest("hex") },
-    create: { originalName: "vpn-diagnose.log", storedName: "seed-diagnose.log", storageKey: "seed-diagnose.log", filePath: samplePath, mimeType: "text/plain", detectedMimeType: "text/plain", fileExtension: ".log", fileSize: Buffer.byteLength(sampleContent), checksum: createHash("sha256").update(sampleContent).digest("hex"), attachmentType: "LOG", visibility: "PUBLIC", scanStatus: "CLEAN", ticketId: sampleTicket.id, uploadedById: customer.id },
+    update: { ticketId: sampleTicket.id, uploadedById: customer.id, filePath: samplePath, fileSize: Buffer.byteLength(sampleContent), content: Buffer.from(sampleContent), checksum: createHash("sha256").update(sampleContent).digest("hex") },
+    create: { originalName: "vpn-diagnose.log", storedName: "seed-diagnose.log", storageKey: "seed-diagnose.log", filePath: samplePath, mimeType: "text/plain", detectedMimeType: "text/plain", fileExtension: ".log", fileSize: Buffer.byteLength(sampleContent), content: Buffer.from(sampleContent), checksum: createHash("sha256").update(sampleContent).digest("hex"), attachmentType: "LOG", visibility: "PUBLIC", scanStatus: "CLEAN", ticketId: sampleTicket.id, uploadedById: customer.id },
   });
 
   const articles: Array<[string, string, string, string]> = [
